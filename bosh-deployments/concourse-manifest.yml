@@ -1,0 +1,102 @@
+---
+name: concourse
+
+releases:
+- name: concourse
+  version: 3.5.0
+- name: garden-runc
+  version: 1.6.0
+
+stemcells:
+- alias: trusty
+  os: ubuntu-trusty
+  version: latest
+
+instance_groups:
+- name: web
+  instances: 1
+  # replace with a VM type from your BOSH Director's cloud config
+  vm_type: large
+  stemcell: trusty
+  azs: [AZ1]
+  networks:
+  - name: default
+    default: [dns, gateway]
+  - name: vip
+    static_ips: [((cc_web_ip))]
+# vm extensions to be used in case the web vm for concourse is required to be behind an load balancer.
+#  vm_extensions:
+#  - concourse
+  jobs:
+  - name: atc
+    release: concourse
+    properties:
+      # replace with your CI's externally reachable URL, e.g. https://ci.concourse.com
+      external_url: ((cc_web_external_url))
+      bind_port: ((cc_web_bind_port))
+
+      # Basic Auth is not recommended; please replace with the admin team authentication method of your choice
+      basic_auth_username: ((cc_auth_username))
+      basic_auth_password: ((cc_auth_password))
+
+      # replace with your SSL cert and key
+      #tls_cert: YOUR-TLS-CERT
+      #tls_key: YOUR-TLS-CERT-KEY
+
+      postgresql_database: &atc_db atc
+  - name: tsa
+    release: concourse
+    properties: {}
+
+- name: db
+  instances: 1
+  # replace with a VM type from your BOSH Director's cloud config
+  vm_type: large
+  stemcell: trusty
+  # replace with a disk type from your BOSH Director's cloud config
+  persistent_disk_type: large
+  azs: [AZ1]
+  networks:
+  - name: default
+  jobs:
+  - name: postgresql
+    release: concourse
+    properties:
+      databases:
+      - name: *atc_db
+        # make up a role and password
+        role: ((cc_cb_role))
+        password: ((cc_db_pass))
+
+- name: worker
+  instances: 1
+  # replace with a VM type from your BOSH Director's cloud config
+  vm_type: xlarge
+  # vm_extensions:
+  # # replace with a VM extension from your BOSH Director's cloud config that will attach
+  # # sufficient ephemeral storage to VMs in this instance group.
+  # - concourse
+  stemcell: trusty
+  azs: [AZ1]
+  networks:
+  - name: default
+  jobs:
+  - name: groundcrew
+    release: concourse
+    properties: {}
+  - name: baggageclaim
+    release: concourse
+    properties: {}
+  - name: garden
+    release: garden-runc
+    properties:
+      garden:
+        listen_network: tcp
+        listen_address: 0.0.0.0:7777
+
+update:
+  canaries: 1
+  max_in_flight: 4
+  serial: false
+  canary_watch_time: 1000-60000
+  update_watch_time: 1000-60000

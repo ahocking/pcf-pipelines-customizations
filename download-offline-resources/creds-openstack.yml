@@ -1,0 +1,8 @@
+pivnet_token: sqZe-rSvhjenf9fS5UTA
+opsman_major_minor_version: 1\.12\.4
+ert_major_minor_version: 1\.12\.6
+s3_access_key_id: minio
+s3_secret_access_key: 6322aff06bba480e879214ce3e73d764
+s3_endpoint: http://192.168.100.101:9000
+s3_bucket: runc-images
+stemcell_iaas_glob: "*openstack*"
