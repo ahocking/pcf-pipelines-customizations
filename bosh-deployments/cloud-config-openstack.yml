@@ -1,0 +1,45 @@
+azs:
+- name: AZ1
+  cloud_properties:
+    availability_zone: nova
+
+vm_types:
+- name: default
+  cloud_properties:
+    instance_type: m1.small
+- name: large
+  cloud_properties:
+    instance_type: m1.large
+- name: xlarge
+  cloud_properties:
+    instance_type: m1.xlarge
+
+disk_types:
+- name: default
+  disk_size: 3000
+- name: large
+  disk_size: 50_000
+
+networks:
+- name: default
+  type: manual
+  subnets:
+  - range: 192.168.100.0/22
+    gateway: 192.168.100.1
+    az: AZ1
+    reserved: [192.168.100.1-192.168.100.20]
+    static:
+    - 192.168.100.21
+    - 192.168.100.101
+    dns: [8.8.8.8]
+    cloud_properties:
+      net_id: fddf4012-e26e-4512-8d80-319681948582
+- name: vip
+  type: vip
+
+compilation:
+  workers: 4
+  reuse_compilation_vms: true
+  az: AZ1
+  vm_type: default
+  network: default
