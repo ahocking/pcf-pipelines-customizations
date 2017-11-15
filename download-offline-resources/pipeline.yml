@@ -133,7 +133,7 @@ jobs:
   - get: elastic-runtime-pivnet
     trigger: true
     params:
-      globs: ["*.pivotal"]
+      globs: ["cf-*.pivotal"]
   - task: create-tarball
     config:
       platform: linux
