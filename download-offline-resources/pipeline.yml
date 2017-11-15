@@ -29,6 +29,14 @@ resources:
     product_version: {{ert_major_minor_version}}
     sort_by: semver
 
+- name: ipsec-addon-pivnet
+  type: pivnet
+  source:
+    api_token: {{pivnet_token}}
+    product_slug: p-ipsec-addon
+    product_version: {{ipsec_major_minor_version}}
+    sort_by: semver
+
 - name: czero-cflinuxfs2
   type: docker-image
   source:
@@ -52,6 +60,15 @@ resources:
     endpoint: {{s3_endpoint}}
     bucket: {{s3_bucket}}
     regexp: "elastic-runtime/elastic-runtime-(.*).tgz"
+
+- name: ipsec-addon-s3
+  type: s3
+  source:
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+    endpoint: {{s3_endpoint}}
+    bucket: {{s3_bucket}}
+    regexp: "p-ipsec-addon/p-ipsec-addon-(.*).tgz"
 
 - name: czero-cflinuxfs2-s3
   type: s3
@@ -159,6 +176,38 @@ jobs:
   - put: elastic-runtime-s3
     params:
       file: "elastic-runtime-tarball/elastic-runtime-*.tgz"
+
+- name: ipsec-addon
+  plan:
+  - get: ipsec-addon-pivnet
+    trigger: true
+    params:
+      globs: ["*.tgz"]
+  - task: create-tarball
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: czero/cflinuxfs2
+      inputs:
+      - name: ipsec-addon-pivnet
+      outputs:
+      - name: ipsec-addon-tarball
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          set -eu
+
+          version=$(cat ipsec-addon-pivnet/metadata.json | jq --raw-output '.Release.Version')
+
+          echo "Creating tarball with version ${version}..."
+          tar czf "ipsec-addon-tarball/p-ipsec-addon-${version}.tgz" -C ipsec-addon-pivnet .
+  - put: ipsec-addon-s3
+    params:
+      file: "ipsec-addon-tarball/p-ipsec-addon-*.tgz"
 
 - name: czero-cflinuxfs2
   plan:
